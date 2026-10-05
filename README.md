@@ -56,27 +56,33 @@ booking-share/
 
 ยังไม่ได้สร้างโค้ดแอป
 
-## ข้อมูลหลัก (แผน)
+## ข้อมูลหลัก
+
+Schema อยู่ที่ [supabase/migrations/0001_initial.sql](./supabase/migrations/0001_initial.sql)
 
 | ตาราง | ใช้เก็บ |
 | --- | --- |
-| `team_members` | คนในบริษัทที่ได้รับสิทธิ์ใช้งาน |
-| `rooms` | ห้องที่เปิดให้จอง: ชื่อ, ราคาอ้างอิงต่อคืน (ไม่บังคับ, ไม่ใช้คำนวณ), เปิด/ปิดใช้งาน ไม่มีรูป |
-| `bookings` | รายการจอง: วันเข้า–ออก ชื่อรายการ ยอดรวม สถานะ |
-| `booking_rooms` | ห้องในแต่ละรายการ พร้อมจำนวนคนต่อห้อง และ constraint กันจองห้องซ้อนคืน |
-| `notifications` | แจ้งเตือนในแอป |
+| `team_members` | คนในบริษัทที่ได้รับสิทธิ์ (`display_name`, `is_active`) |
+| `rooms` | ห้อง: ชื่อ, ราคาอ้างอิงต่อคืน (ไม่บังคับ, ไม่ใช้คำนวณ), เปิด/ปิดใช้งาน ไม่มีรูป |
+| `bookings` | รายการจอง: วันเข้า–ออก ชื่อ ยอดรวม (ผู้ใช้กรอก) สถานะ และผู้สร้าง/แก้ไข/ยกเลิก/คืนรายการ พร้อมเวลา |
+| `booking_rooms` | ห้องในแต่ละรายการ + จำนวนคนต่อห้อง; `EXCLUDE` constraint กันห้องเดียวกันซ้อนคืน |
+| `notifications`, `notification_reads` | แจ้งเตือนในแอปและสถานะอ่านรายคน |
 
-- จำนวนคนของรายการ = ผลรวมจำนวนคนของแต่ละห้อง ในรายการที่ไม่ถูกยกเลิก
-- กำลังพักวันที่ D เมื่อ `check_in <= D < check_out`
-- ยอดรวมเป็นค่าที่ผู้ใช้กรอก ไม่คำนวณอัตโนมัติ
+- ผู้ใช้ไม่เขียนตารางตรง ๆ ทุกการเขียนผ่าน RPC: `create_booking`, `update_booking`, `cancel_booking`, `restore_booking`, `mark_notification_read`, `mark_all_notifications_read`
+- RPC ฝั่งอ่าน: `get_daily_stats(from, to)` (ยอดรายการ/เช็กอิน/กำลังพัก), `available_rooms(check_in, check_out, exclude_booking_id)`
+- View: `booking_overview` (รวมห้อง จำนวนคน ชื่อผู้กระทำ), `notification_feed` (มี `is_read`)
+- รหัส error ที่แอปต้อง map: `BK001` ห้องไม่ว่าง (detail ระบุห้อง/คืน), `BK002` ข้อมูลไม่ถูกต้อง, `BK003` ไม่มีสิทธิ์, `BK004` สถานะไม่ถูกต้อง, `BK005` ไม่พบรายการ
+- การคืนรายการเป็น all-or-nothing: ถ้ามีห้องใดชน ไม่คืนอะไรเลยและคืน `BK001`
+- ลบผู้ใช้ที่มีประวัติไม่ได้ ให้ตั้ง `team_members.is_active = false` แทน
 
-> `supabase/migrations/0001_initial.sql` เป็นร่างเก่า (1 การจองต่อ 1 ห้อง ไม่มียอดรวม) ต้องออกแบบใหม่ก่อนรัน ห้ามใช้เป็น schema สุดท้าย
+ทดสอบ schema (ต้องมี Docker และ `psql`): `supabase/tests/run.sh`
 
 ## ลำดับทำงาน
 
 1. ~~สรุปขอบเขต (SCOPE.md)~~
 2. ~~ออกแบบ UX/UI (UX-UI.md)~~
-3. ออกแบบ schema ใหม่ + RLS + exclusion constraint แล้วแทน `0001_initial.sql`
+3. ~~ออกแบบ schema + RLS + exclusion constraint (มีเทสต์)~~
+3b. Wireframe หน้าจอ
 4. สร้าง Next.js App Router + TypeScript, ติดตั้ง `@supabase/supabase-js`, `@supabase/ssr`
 5. ตั้งค่า Supabase Auth, รัน migration, เพิ่มผู้ใช้ใน `team_members` และห้องใน `rooms`
 6. ทำ design tokens + คอมโพเนนต์ UI พื้นฐาน

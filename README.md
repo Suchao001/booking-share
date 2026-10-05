@@ -5,6 +5,7 @@
 เอกสารหลัก
 - [SCOPE.md](./SCOPE.md) — ขอบเขตและกติกา MVP (แหล่งความจริง)
 - [UX-UI.md](./UX-UI.md) — หน้าจอ การไหลของผู้ใช้ และ design tokens
+- [wireframes/index.html](./wireframes/index.html) — wireframe แบบกดได้ เปิดในเบราว์เซอร์ได้เลย (ข้อมูลตัวอย่าง ใช้กติกาเดียวกับ schema)
 
 ## ขอบเขต MVP
 
@@ -82,7 +83,7 @@ Schema อยู่ที่ [supabase/migrations/0001_initial.sql](./supabase/m
 1. ~~สรุปขอบเขต (SCOPE.md)~~
 2. ~~ออกแบบ UX/UI (UX-UI.md)~~
 3. ~~ออกแบบ schema + RLS + exclusion constraint (มีเทสต์)~~
-3b. Wireframe หน้าจอ
+3b. ~~Wireframe หน้าจอแบบกดได้ ([wireframes/index.html](./wireframes/index.html))~~
 4. สร้าง Next.js App Router + TypeScript, ติดตั้ง `@supabase/supabase-js`, `@supabase/ssr`
 5. ตั้งค่า Supabase Auth, รัน migration, เพิ่มผู้ใช้ใน `team_members` และห้องใน `rooms`
 6. ทำ design tokens + คอมโพเนนต์ UI พื้นฐาน

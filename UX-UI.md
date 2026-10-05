@@ -2,6 +2,8 @@
 
 อ้างอิงจาก [SCOPE.md](./SCOPE.md) เป็นแหล่งความจริงของขอบเขตและกติกา เอกสารนี้กำหนดหน้าจอ การไหลของผู้ใช้ และ design tokens ก่อนเริ่มเขียนโค้ด
 
+ดู wireframe แบบกดได้ที่ [wireframes/index.html](./wireframes/index.html) (เปิดในเบราว์เซอร์; ลิงก์ตรง `#calendar`, `#form`, `#detail`, `#notifications`, `#account`)
+
 ## 1. หลักการออกแบบ
 
 - **Mobile first:** ออกแบบที่ 375px ก่อน แล้วขยายเป็น tablet/desktop (จำกัดความกว้างเนื้อหา ~640px ตรงกลาง บน desktop)

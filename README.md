@@ -5,7 +5,8 @@
 เอกสารหลัก
 - [SCOPE.md](./SCOPE.md) — ขอบเขตและกติกา MVP (แหล่งความจริง)
 - [UX-UI.md](./UX-UI.md) — หน้าจอ การไหลของผู้ใช้ และ design tokens
-- [wireframes/index.html](./wireframes/index.html) — wireframe แบบกดได้ เปิดในเบราว์เซอร์ได้เลย (ข้อมูลตัวอย่าง ใช้กติกาเดียวกับ schema)
+- [wireframes/index.html](./wireframes/index.html) — wireframe แบบกดได้ (Live: https://suchao001.github.io/booking-share/)
+- [wireframes/spec.html](./wireframes/spec.html) — ใบเสนอสเปกระบบสำหรับผู้ใช้ (Live: https://suchao001.github.io/booking-share/spec.html)
 
 ## ขอบเขต MVP
 

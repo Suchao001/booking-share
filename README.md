@@ -12,7 +12,7 @@
 - สมาชิกบริษัทเข้าสู่ระบบ
 - การจองห้องพักข้ามคืน: หนึ่งรายการมีหลายห้อง ใช้วันเข้า–ออกชุดเดียวกัน กรอกจำนวนคนแยกต่อห้อง
 - ห้องเดียวกันห้ามจองซ้อนคืนเดียวกัน บังคับที่ PostgreSQL
-- ปฏิทินรายเดือน แยกยอดรายการจอง เช็กอิน และกำลังพัก แตะวันเพื่อดูรายการ
+- ปฏิทินรายเดือน นับตามวันเข้าพัก แยกยอด **รอเช็กอิน** และ **เช็กอินแล้ว** แตะวันเพื่อดูรายการและกดเช็กอินได้ทันที
 - เพิ่ม แก้ไข ยกเลิก และคืนรายการจอง (คืนได้เมื่อทุกห้องว่างตลอดช่วงพัก)
 - ผู้ใช้กรอกยอดรวมเอง และตรวจใน dialog ก่อนบันทึก
 - แจ้งเตือนในแอปเมื่อมีการจอง ยกเลิก หรือคืนรายการ
@@ -66,13 +66,14 @@ Schema อยู่ที่ [supabase/migrations/0001_initial.sql](./supabase/m
 | --- | --- |
 | `team_members` | คนในบริษัทที่ได้รับสิทธิ์ (`display_name`, `is_active`) |
 | `rooms` | ห้อง: ชื่อ, ราคาอ้างอิงต่อคืน (ไม่บังคับ, ไม่ใช้คำนวณ), เปิด/ปิดใช้งาน ไม่มีรูป |
-| `bookings` | รายการจอง: วันเข้า–ออก ชื่อ ยอดรวม (ผู้ใช้กรอก) สถานะ และผู้สร้าง/แก้ไข/ยกเลิก/คืนรายการ พร้อมเวลา |
+| `bookings` | รายการจอง: วันเข้า–ออก ชื่อ ยอดรวม สถานะ (`reserved`, `checked_in`, `cancelled`) และประวัติสร้าง/แก้ไข/เช็กอิน/ยกเลิก/คืนรายการ |
 | `booking_rooms` | ห้องในแต่ละรายการ + จำนวนคนต่อห้อง; `EXCLUDE` constraint กันห้องเดียวกันซ้อนคืน |
 | `notifications`, `notification_reads` | แจ้งเตือนในแอปและสถานะอ่านรายคน |
 
 - ผู้ใช้ไม่เขียนตารางตรง ๆ ทุกการเขียนผ่าน RPC: `create_booking`, `update_booking`, `cancel_booking`, `restore_booking`, `mark_notification_read`, `mark_all_notifications_read`
 - จัดการห้อง: `create_room`, `update_room` (ชื่อ, ราคาอ้างอิง, เปิด/ปิดใช้งาน) ใน [0002_room_management.sql](./supabase/migrations/0002_room_management.sql)
-- RPC ฝั่งอ่าน: `get_daily_stats(from, to)` (ยอดรายการ/เช็กอิน/กำลังพัก), `available_rooms(check_in, check_out, exclude_booking_id)`
+- RPC เช็กอิน: `check_in_booking(id)`, `undo_check_in_booking(id)` ใน [0003_checkin_status.sql](./supabase/migrations/0003_checkin_status.sql)
+- RPC ฝั่งอ่าน: `get_daily_stats(from, to)` (ยอดรอเช็กอิน/เช็กอินแล้ว นับตามวันเข้าพัก), `available_rooms(check_in, check_out, exclude_booking_id)`
 - View: `booking_overview` (รวมห้อง จำนวนคน ชื่อผู้กระทำ), `notification_feed` (มี `is_read`)
 - รหัส error ที่แอปต้อง map: `BK001` ห้องไม่ว่าง (detail ระบุห้อง/คืน), `BK002` ข้อมูลไม่ถูกต้อง (รวมชื่อห้องซ้ำ), `BK003` ไม่มีสิทธิ์, `BK004` สถานะไม่ถูกต้อง, `BK005` ไม่พบรายการ
 - การคืนรายการเป็น all-or-nothing: ถ้ามีห้องใดชน ไม่คืนอะไรเลยและคืน `BK001`

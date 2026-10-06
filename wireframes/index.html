@@ -181,32 +181,42 @@ let nextRoomId=7;
 const ME='สมชาย';
 let nextId=4;
 const bookings=[
- {id:1,title:'คุณวิชัย',in:'2026-10-05',out:'2026-10-08',total:5400,note:'มากับครอบครัว',status:'active',rooms:[{room:1,guests:2},{room:2,guests:2}],createdBy:'สมหญิง',updatedBy:'สมหญิง',updatedAt:'4 ต.ค. 10:12'},
- {id:2,title:'บริษัท ABC',in:'2026-10-06',out:'2026-10-07',total:1500,note:'',status:'active',rooms:[{room:3,guests:2}],createdBy:'สมชาย',updatedBy:'สมชาย',updatedAt:'3 ต.ค. 16:40'},
+ {id:1,title:'คุณวิชัย',in:'2026-10-05',out:'2026-10-08',total:5400,note:'มากับครอบครัว',status:'checked_in',checkedInBy:'สมชาย',checkedInAt:'5 ต.ค. 14:00',rooms:[{room:1,guests:2},{room:2,guests:2}],createdBy:'สมหญิง',updatedBy:'สมชาย',updatedAt:'5 ต.ค. 14:00'},
+ {id:2,title:'บริษัท ABC',in:'2026-10-06',out:'2026-10-07',total:1500,note:'',status:'reserved',rooms:[{room:3,guests:2}],createdBy:'สมชาย',updatedBy:'สมชาย',updatedAt:'3 ต.ค. 16:40'},
  {id:3,title:'คุณมานี',in:'2026-10-08',out:'2026-10-10',total:2600,note:'',status:'cancelled',rooms:[{room:1,guests:2}],createdBy:'สมหญิง',updatedBy:'สมหญิง',updatedAt:'2 ต.ค. 09:00',cancelledBy:'สมหญิง'},
 ];
 const notes=[
  {id:1,type:'created',text:'สมหญิง จองห้อง 101, 102 วันที่ 5–8 ต.ค.',time:'4 ต.ค. 10:12',booking:1,read:false},
  {id:2,type:'cancelled',text:'สมหญิง ยกเลิกรายการ คุณมานี (ห้อง 101)',time:'2 ต.ค. 09:30',booking:3,read:true},
 ];
-const active=b=>b.status==='active';
+const isLive=b=>b.status!=='cancelled';
 const stays=(b,d)=>b.in<=d&&d<b.out;
 const guestsOf=b=>b.rooms.reduce((s,r)=>s+r.guests,0);
 const roomName=id=>ROOMS.find(r=>r.id===id).name;
 function stats(d){
-  const list=bookings.filter(b=>active(b)&&stays(b,d));
-  return{count:list.length,checkin:list.filter(b=>b.in===d).reduce((s,b)=>s+guestsOf(b),0),staying:list.reduce((s,b)=>s+guestsOf(b),0),list};
+  const list=bookings.filter(b=>isLive(b)&&b.in===d);
+  const reserved=list.filter(b=>b.status==='reserved');
+  const checkedIn=list.filter(b=>b.status==='checked_in');
+  return {
+    reservedCount: reserved.length,
+    reservedGuests: reserved.reduce((s,b)=>s+guestsOf(b),0),
+    checkedInCount: checkedIn.length,
+    checkedInGuests: checkedIn.reduce((s,b)=>s+guestsOf(b),0),
+    totalCount: list.length,
+    totalGuests: list.reduce((s,b)=>s+guestsOf(b),0),
+    list
+  };
 }
 function conflicts(roomIds,inn,out,exclude){
   const res=[];
-  bookings.forEach(b=>{if(!active(b)||b.id===exclude)return;
+  bookings.forEach(b=>{if(!isLive(b)||b.id===exclude)return;
     b.rooms.forEach(r=>{if(roomIds.includes(r.room)&&b.in<out&&inn<b.out)
       res.push(`ห้อง ${roomName(r.room)} ไม่ว่าง ${sd(b.in>inn?b.in:inn)} ถึง ${sd(b.out<out?b.out:out)} (${b.title} โดย ${b.createdBy})`)})});
   return res;
 }
 
 /* ---------- state ---------- */
-const S={route:'login',month:'2026-10',sel:TODAY,showCancelled:false,id:null,toast:null,sheet:null,
+const S={route:'login',month:'2026-10',sel:TODAY,showCancelled:false,tab:'all',id:null,toast:null,sheet:null,
   form:null};
 const $app=document.getElementById('app');
 const go=(r,extra={})=>{Object.assign(S,{route:r,sheet:null,toast:null},extra);render()};
@@ -243,24 +253,39 @@ const shiftMonth=(ym,n)=>{const[y,m]=ym.split('-').map(Number);const d=new Date(
 
 function bookingCard(b,day){
   const tags=[];
-  if(b.status==='cancelled')tags.push('<span class="badge cancelled">ยกเลิกแล้ว</span>');
-  else if(day&&b.in===day)tags.push('<span class="badge in">เช็กอินวันนี้</span>');
-  else if(day)tags.push('<span class="badge">กำลังพัก</span>');
-  return `<button class="bk" data-open="${b.id}"><div class="row"><span class="t">${esc(b.title)}</span><span>${tags.join('')}</span></div>
+  if(b.status==='cancelled') tags.push('<span class="badge cancelled">ยกเลิกแล้ว</span>');
+  else if(b.status==='checked_in') tags.push('<span class="badge ok">เช็กอินแล้ว</span>');
+  else tags.push('<span class="badge in">รอเช็กอิน</span>');
+
+  const checkInBtn = (b.status==='reserved')
+    ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--color-border);display:flex;justify-content:flex-end">
+         <button class="btn primary sm" data-quick-checkin="${b.id}" style="min-height:36px;padding:0 14px;font-size:14px">${ic('check','sm')} เช็กอิน</button>
+       </div>`
+    : '';
+
+  return `<div class="bk" data-open="${b.id}" style="cursor:pointer">
+   <div class="row"><span class="t">${esc(b.title)}</span><span>${tags.join('')}</span></div>
    <div class="m">ห้อง ${b.rooms.map(r=>roomName(r.room)).join(', ')}</div>
-   <div class="m num">${sd(b.in)}–${sd(b.out)} (${diff(b.in,b.out)} คืน) · ${guestsOf(b)} คน · <span class="amt">${baht(b.total)}</span></div></button>`;
+   <div class="m num">${sd(b.in)}–${sd(b.out)} (${diff(b.in,b.out)} คืน) · ${guestsOf(b)} คน · <span class="amt">${baht(b.total)}</span></div>
+   ${checkInBtn}
+  </div>`;
 }
 
 function vCalendar(){
   const[y,m]=S.month.split('-').map(Number);
   const st=stats(S.sel);
-  const cancelledToday=bookings.filter(b=>!active(b)&&stays(b,S.sel));
-  const shown=[...st.list,...(S.showCancelled?cancelledToday:[])];
+  const cancelledToday=bookings.filter(b=>!isLive(b)&&b.in===S.sel);
+  
+  let baseList = st.list;
+  if(S.tab==='reserved') baseList = baseList.filter(b=>b.status==='reserved');
+  else if(S.tab==='checked_in') baseList = baseList.filter(b=>b.status==='checked_in');
+  
+  const shown=[...baseList,...(S.showCancelled?cancelledToday:[])];
   const cells=monthCells(S.month).map(d=>{
     if(!d)return '<div class="day empty"></div>';
     const s=stats(d);const n=parse(d).getUTCDate();
-    const label=`${n} ${MONTHS[m-1]} เช็กอิน ${s.checkin} คน กำลังพัก ${s.staying} คน`;
-    return `<button class="day ${d===TODAY?'today':''} ${d===S.sel?'selected':''}" data-day="${d}" aria-label="${label}" ${d===S.sel?'aria-pressed="true"':''}><span class="d num">${n}</span><span class="c num" aria-hidden="true">${s.checkin?s.checkin:''}</span></button>`}).join('');
+    const label=`${n} ${MONTHS[m-1]} รอเช็กอิน ${s.reservedGuests} คน เช็กอินแล้ว ${s.checkedInGuests} คน`;
+    return `<button class="day ${d===TODAY?'today':''} ${d===S.sel?'selected':''}" data-day="${d}" aria-label="${label}" ${d===S.sel?'aria-pressed="true"':''}><span class="d num">${n}</span><span class="c num" aria-hidden="true">${s.totalGuests?s.totalGuests:''}</span></button>`}).join('');
   return `<main>
    <div class="cal-head">
     <button class="icon-btn" data-month="-1" aria-label="เดือนก่อนหน้า">${ic('left')}</button>
@@ -269,16 +294,20 @@ function vCalendar(){
     <button class="today-btn" data-today>วันนี้</button>
    </div>
    <div class="grid" role="group" aria-label="ปฏิทิน">${DOW.map(d=>`<div class="dow" aria-hidden="true">${d}</div>`).join('')}${cells}</div>
-   <p class="hint" style="margin:6px 0 0">ตัวเลขบนวัน = จำนวนคนเช็กอินวันนั้น</p>
+   <p class="hint" style="margin:6px 0 0">ตัวเลขบนวัน = จำนวนคนเข้าพักทั้งหมดในวันนั้น</p>
    <h2 style="margin-top:16px">${short(S.sel)}</h2>
-   <div class="stats">
-    <div class="stat"><b class="num">${st.count}</b><span>รายการจอง</span></div>
-    <div class="stat"><b class="num">${st.checkin}</b><span>เช็กอิน (คน)</span></div>
-    <div class="stat"><b class="num">${st.staying}</b><span>กำลังพัก (คน)</span></div>
+   <div class="stats" style="grid-template-columns:1fr 1fr">
+    <div class="stat"><b class="num" style="color:var(--color-primary)">${st.reservedGuests} คน</b><span>รอเช็กอิน (${st.reservedCount} รายการ)</span></div>
+    <div class="stat"><b class="num" style="color:var(--color-success)">${st.checkedInGuests} คน</b><span>เช็กอินแล้ว (${st.checkedInCount} รายการ)</span></div>
+   </div>
+   <div style="display:flex;gap:6px;margin-bottom:12px">
+     <button class="btn ${S.tab==='all'?'primary':'secondary'}" data-tab="all" style="flex:1;min-height:38px;padding:0;font-size:14px">ทั้งหมด (${st.totalCount})</button>
+     <button class="btn ${S.tab==='reserved'?'primary':'secondary'}" data-tab="reserved" style="flex:1;min-height:38px;padding:0;font-size:14px">รอเช็กอิน (${st.reservedCount})</button>
+     <button class="btn ${S.tab==='checked_in'?'primary':'secondary'}" data-tab="checked_in" style="flex:1;min-height:38px;padding:0;font-size:14px">เช็กอินแล้ว (${st.checkedInCount})</button>
    </div>
    <label class="toggle"><input type="checkbox" id="showC" ${S.showCancelled?'checked':''}> แสดงรายการที่ยกเลิก</label>
    <div class="list" aria-label="รายการจอง">
-    ${shown.length?shown.map(b=>bookingCard(b,S.sel)).join(''):`<div class="empty-state card"><p style="margin:0 0 12px">ยังไม่มีการจองในวันนี้</p><button class="btn secondary" data-new>เพิ่มการจอง</button></div>`}
+    ${shown.length?shown.map(b=>bookingCard(b,S.sel)).join(''):`<div class="empty-state card"><p style="margin:0 0 12px">ไม่มีรายการในหมวดนี้</p><button class="btn secondary" data-new>เพิ่มการจอง</button></div>`}
    </div>
   </main>
   <button class="fab" data-new aria-label="เพิ่มการจอง">${ic('plus')}<span>จอง</span></button>${nav('calendar')}${toastHtml()}`;
@@ -349,10 +378,32 @@ function vConflict(){
 }
 
 function vDetail(){
-  const b=bookings.find(x=>x.id===S.id);const ok=active(b);
+  const b=bookings.find(x=>x.id===S.id);
+  const statusBadge = (b.status==='cancelled')
+    ? '<span class="badge cancelled">ยกเลิกแล้ว</span>'
+    : (b.status==='checked_in')
+      ? '<span class="badge ok">เช็กอินแล้ว</span>'
+      : '<span class="badge in">รอเช็กอิน</span>';
+
+  let actionButtons = '';
+  if(b.status === 'reserved'){
+    actionButtons = `
+      <button class="btn primary block" data-do-checkin="${b.id}">${ic('check','sm')} เช็กอินลูกค้า</button>
+      <button class="btn secondary block" data-edit>${ic('pencil','sm')} แก้ไข</button>
+      <button class="btn danger block" data-cancel>${ic('x','sm')} ยกเลิกการจอง</button>`;
+  } else if(b.status === 'checked_in'){
+    actionButtons = `
+      <button class="btn secondary block" data-undo-checkin="${b.id}">${ic('undo','sm')} ยกเลิกการเช็กอิน (กลับไปรอเช็กอิน)</button>
+      <button class="btn secondary block" data-edit>${ic('pencil','sm')} แก้ไข</button>
+      <p class="hint" style="text-align:center;margin:4px 0">หากต้องการยกเลิกการจอง ต้องกดยกเลิกการเช็กอินก่อน</p>`;
+  } else {
+    actionButtons = `<button class="btn primary block" data-restore>${ic('undo','sm')} คืนรายการ</button>`;
+  }
+
   return `<main class="no-nav">
-   <div class="topbar"><button class="icon-btn" data-back aria-label="กลับ">${ic('left')}</button><h1>${esc(b.title)}</h1><span class="badge ${ok?'ok':'cancelled'}">${ok?'จองแล้ว':'ยกเลิกแล้ว'}</span></div>
+   <div class="topbar"><button class="icon-btn" data-back aria-label="กลับ">${ic('left')}</button><h1>${esc(b.title)}</h1>${statusBadge}</div>
    <div class="card"><dl class="kv num">
+    <dt>สถานะ</dt><dd><b>${b.status==='reserved'?'รอเช็กอิน':b.status==='checked_in'?'เช็กอินแล้ว':'ยกเลิกแล้ว'}</b></dd>
     <dt>วันพัก</dt><dd>${short(b.in)} → ${short(b.out)} (${diff(b.in,b.out)} คืน)</dd>
     <dt>ห้อง</dt><dd>${b.rooms.map(r=>`ห้อง ${roomName(r.room)} · ${r.guests} คน`).join('<br>')}</dd>
     <dt>รวมทั้งหมด</dt><dd>${guestsOf(b)} คน</dd>
@@ -360,11 +411,11 @@ function vDetail(){
     <dt>หมายเหตุ</dt><dd>${b.note?esc(b.note):'-'}</dd>
     <dt>สร้างโดย</dt><dd>${b.createdBy}</dd>
     <dt>แก้ไขล่าสุด</dt><dd>${b.updatedBy} · ${b.updatedAt}</dd>
-    ${b.cancelledBy&&!ok?`<dt>ยกเลิกโดย</dt><dd>${b.cancelledBy}</dd>`:''}
+    ${b.checkedInBy?`<dt>เช็กอินโดย</dt><dd>${b.checkedInBy} · ${b.checkedInAt}</dd>`:''}
+    ${b.cancelledBy?`<dt>ยกเลิกโดย</dt><dd>${b.cancelledBy}</dd>`:''}
    </dl></div>
    <div class="actions">
-    ${ok?`<button class="btn secondary block" data-edit>${ic('pencil','sm')} แก้ไข</button><button class="btn danger block" data-cancel>${ic('x','sm')} ยกเลิกการจอง</button>`
-        :`<button class="btn primary block" data-restore>${ic('undo','sm')} คืนรายการ</button>`}
+    ${actionButtons}
    </div>
   </main>${toastHtml()}${S.sheet==='cancel'?`<div class="scrim"><div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="cx"><h2 id="cx">ยกเลิกรายการนี้?</h2><p>ห้องจะว่างให้ผู้อื่นจอง และทุกคนจะได้รับแจ้งเตือน (คืนรายการได้ภายหลังถ้าห้องยังว่าง)</p><div class="btns"><button class="btn danger solid block" id="doCancel">ยกเลิกการจอง</button><button class="btn secondary block" data-close>ไม่ยกเลิก</button></div></div></div>`:''}${S.sheet==='conflict'?vConflict():''}`;
 }
@@ -387,7 +438,7 @@ function vAccount(){
 
 function vRooms(){
   const e=S.roomEdit;
-  const cnt=id=>bookings.filter(b=>active(b)&&b.out>TODAY&&b.rooms.some(r=>r.room===id)).length;
+  const cnt=id=>bookings.filter(b=>isLive(b)&&b.out>TODAY&&b.rooms.some(r=>r.room===id)).length;
   return `<main>
    <div class="topbar"><button class="icon-btn" data-back aria-label="กลับ">${ic('left')}</button><h1>จัดการห้อง</h1></div>
    <p class="muted" style="margin:0 0 12px">ห้องที่เปิดใช้งานจะเลือกได้ตอนจอง ห้องที่ปิดใช้งานยังเห็นในรายการจองเดิม</p>
@@ -452,9 +503,29 @@ $app.addEventListener('click',e=>{
   if(D.go)return go(D.go);
   if(D.day){S.sel=D.day;return render()}
   if(D.month){S.month=shiftMonth(S.month,+D.month);return render()}
+  if(D.tab){S.tab=D.tab;return render()}
+  if(D.quickCheckin){
+    const q=bookings.find(x=>x.id==D.quickCheckin);
+    q.status='checked_in';q.checkedInBy=ME;q.checkedInAt='ตอนนี้';q.updatedBy=ME;q.updatedAt='ตอนนี้';
+    toast(`เช็กอิน ${q.title} เรียบร้อย`);
+    return render();
+  }
+  if(D.doCheckin){
+    const q=bookings.find(x=>x.id==D.doCheckin);
+    q.status='checked_in';q.checkedInBy=ME;q.checkedInAt='ตอนนี้';q.updatedBy=ME;q.updatedAt='ตอนนี้';
+    toast(`เช็กอิน ${q.title} เรียบร้อย`);
+    return render();
+  }
+  if(D.undoCheckin){
+    const q=bookings.find(x=>x.id==D.undoCheckin);
+    q.status='reserved';delete q.checkedInBy;delete q.checkedInAt;q.updatedBy=ME;q.updatedAt='ตอนนี้';
+    toast('ยกเลิกการเช็กอินแล้ว');
+    return render();
+  }
   if('today' in D){S.month=TODAY.slice(0,7);S.sel=TODAY;return render()}
   if('new' in D){S.form=newForm();return go('form')}
-  if(D.open){return go('detail',{id:+D.open})}
+  const card=e.target.closest('[data-open]');
+  if(card && !e.target.closest('[data-quick-checkin]')){return go('detail',{id:+card.dataset.open})}
   if('back' in D){return go(S.route==='rooms'?'account':S.route==='form'&&S.form.edit?'detail':'calendar')}
   if(D.room){readForm();const id=+D.room;const i=S.form.rooms.findIndex(r=>r.room===id);
     i>=0?S.form.rooms.splice(i,1):S.form.rooms.push({room:id,guests:1});return render()}
@@ -468,7 +539,7 @@ $app.addEventListener('click',e=>{
     if(c.length){S.sheet='conflict';S.sheetTitle='ห้องถูกจองไปแล้ว';S.sheetBody=c.join('\n')+'\n\nข้อมูลที่กรอกยังอยู่ ลองเลือกห้องหรือวันอื่น';return render()}
     const data={title:f.title.trim(),in:f.in,out:f.out,total:+f.total,note:f.note.trim(),rooms:f.rooms.map(r=>({...r}))};
     if(f.edit){Object.assign(bookings.find(x=>x.id===f.edit),data,{updatedBy:ME,updatedAt:'ตอนนี้'});S.sel=f.in;S.id=f.edit;S.sheet=null;toast('บันทึกการแก้ไขแล้ว');return go('detail',{id:f.edit,toast:S.toast})}
-    const nb={id:nextId++,status:'active',createdBy:ME,updatedBy:ME,updatedAt:'ตอนนี้',...data};bookings.push(nb);
+    const nb={id:nextId++,status:'reserved',createdBy:ME,updatedBy:ME,updatedAt:'ตอนนี้',...data};bookings.push(nb);
     notes.push({id:notes.length+1,type:'created',text:`${ME} จองห้อง ${nb.rooms.map(r=>roomName(r.room)).join(', ')} วันที่ ${sd(nb.in)}–${sd(nb.out)}`,time:'ตอนนี้',booking:nb.id,read:true});
     S.sel=nb.in;S.month=nb.in.slice(0,7);go('calendar');return toast('จองเรียบร้อย')}
   if('radd' in D){S.roomEdit={id:null,name:'',price:'',active:true,errors:null};S.sheet='room';return render()}
@@ -490,7 +561,7 @@ $app.addEventListener('click',e=>{
     S.sheet=null;return(toast('ยกเลิกรายการแล้ว'),render())}
   if('restore' in D){const x=bookings.find(q=>q.id===S.id);const c=conflicts(x.rooms.map(r=>r.room),x.in,x.out,x.id);
     if(c.length){S.sheet='conflict';S.sheetTitle='คืนรายการไม่ได้';S.sheetBody=c.join('\n')+'\n\nไม่มีการเปลี่ยนแปลงใด ๆ ต้องว่างครบทุกห้องจึงจะคืนได้';return render()}
-    x.status='active';delete x.cancelledBy;x.updatedBy=ME;x.updatedAt='ตอนนี้';
+    x.status='reserved';delete x.cancelledBy;x.updatedBy=ME;x.updatedAt='ตอนนี้';
     notes.push({id:notes.length+1,type:'restored',text:`${ME} คืนรายการ ${x.title}`,time:'ตอนนี้',booking:x.id,read:true});
     return(toast('คืนรายการเรียบร้อย'),render())}
   if(D.note){const n=notes.find(q=>q.id==D.note);n.read=true;return go('detail',{id:n.booking})}

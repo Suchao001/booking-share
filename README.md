@@ -16,7 +16,7 @@
 - เพิ่ม แก้ไข ยกเลิก และคืนรายการจอง (คืนได้เมื่อทุกห้องว่างตลอดช่วงพัก)
 - ผู้ใช้กรอกยอดรวมเอง และตรวจใน dialog ก่อนบันทึก
 - แจ้งเตือนในแอปเมื่อมีการจอง ยกเลิก หรือคืนรายการ
-- จัดการรายชื่อห้องผ่าน Supabase Dashboard ในช่วงแรก
+- เพิ่ม/แก้ไข/เปิด-ปิดใช้งานห้องในแอป (หน้าจัดการห้อง)
 
 ยังไม่มี: จองผ่าน public API, หลายบริษัท/การซิงก์ `Booking-system`, คิดราคาอัตโนมัติ, รับชำระเงิน, รายงานรายรับ, push/LINE/อีเมล
 
@@ -34,6 +34,7 @@ booking-share/
 │   │   ├── (main)/bookings/[id]/edit/page.tsx
 │   │   ├── (main)/notifications/page.tsx
 │   │   ├── (main)/account/page.tsx
+│   │   ├── (main)/rooms/page.tsx              # จัดการห้อง
 │   │   ├── layout.tsx
 │   │   ├── page.tsx                           # ไป /calendar
 │   │   └── manifest.ts                        # PWA manifest
@@ -70,9 +71,10 @@ Schema อยู่ที่ [supabase/migrations/0001_initial.sql](./supabase/m
 | `notifications`, `notification_reads` | แจ้งเตือนในแอปและสถานะอ่านรายคน |
 
 - ผู้ใช้ไม่เขียนตารางตรง ๆ ทุกการเขียนผ่าน RPC: `create_booking`, `update_booking`, `cancel_booking`, `restore_booking`, `mark_notification_read`, `mark_all_notifications_read`
+- จัดการห้อง: `create_room`, `update_room` (ชื่อ, ราคาอ้างอิง, เปิด/ปิดใช้งาน) ใน [0002_room_management.sql](./supabase/migrations/0002_room_management.sql)
 - RPC ฝั่งอ่าน: `get_daily_stats(from, to)` (ยอดรายการ/เช็กอิน/กำลังพัก), `available_rooms(check_in, check_out, exclude_booking_id)`
 - View: `booking_overview` (รวมห้อง จำนวนคน ชื่อผู้กระทำ), `notification_feed` (มี `is_read`)
-- รหัส error ที่แอปต้อง map: `BK001` ห้องไม่ว่าง (detail ระบุห้อง/คืน), `BK002` ข้อมูลไม่ถูกต้อง, `BK003` ไม่มีสิทธิ์, `BK004` สถานะไม่ถูกต้อง, `BK005` ไม่พบรายการ
+- รหัส error ที่แอปต้อง map: `BK001` ห้องไม่ว่าง (detail ระบุห้อง/คืน), `BK002` ข้อมูลไม่ถูกต้อง (รวมชื่อห้องซ้ำ), `BK003` ไม่มีสิทธิ์, `BK004` สถานะไม่ถูกต้อง, `BK005` ไม่พบรายการ
 - การคืนรายการเป็น all-or-nothing: ถ้ามีห้องใดชน ไม่คืนอะไรเลยและคืน `BK001`
 - ลบผู้ใช้ที่มีประวัติไม่ได้ ให้ตั้ง `team_members.is_active = false` แทน
 
@@ -85,7 +87,7 @@ Schema อยู่ที่ [supabase/migrations/0001_initial.sql](./supabase/m
 3. ~~ออกแบบ schema + RLS + exclusion constraint (มีเทสต์)~~
 3b. ~~Wireframe หน้าจอแบบกดได้ ([wireframes/index.html](./wireframes/index.html))~~
 4. สร้าง Next.js App Router + TypeScript, ติดตั้ง `@supabase/supabase-js`, `@supabase/ssr`
-5. ตั้งค่า Supabase Auth, รัน migration, เพิ่มผู้ใช้ใน `team_members` และห้องใน `rooms`
+5. ตั้งค่า Supabase Auth, รัน migration, เพิ่มผู้ใช้ใน `team_members` (ห้องเพิ่มได้ในแอป หรือใช้ `supabase/seed.sql`)
 6. ทำ design tokens + คอมโพเนนต์ UI พื้นฐาน
-7. ทำหน้า login, ปฏิทิน, ฟอร์มจอง, รายละเอียด, แจ้งเตือน
+7. ทำหน้า login, ปฏิทิน, ฟอร์มจอง, รายละเอียด, แจ้งเตือน, จัดการห้อง
 8. เพิ่ม manifest ไอคอน และทดสอบบนมือถือก่อนเปิดใช้

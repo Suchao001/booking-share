@@ -20,4 +20,5 @@ psql -q -h localhost -p "$PORT" -U postgres -v ON_ERROR_STOP=1 \
   -f supabase/tests/stubs.sql \
   $(for f in supabase/migrations/*.sql; do printf -- '-f %s ' "$f"; done) \
   -f supabase/tests/booking_flow.sql \
-  -f supabase/tests/rooms.sql 2>&1 | grep -E "NOTICE:  ok|FAIL|ERROR|PASSED"
+  -f supabase/tests/rooms.sql \
+  -f supabase/tests/checkin.sql 2>&1 | grep -E "NOTICE:  ok|FAIL|ERROR|PASSED"

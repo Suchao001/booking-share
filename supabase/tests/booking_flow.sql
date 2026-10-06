@@ -61,14 +61,13 @@ select t.expect_error($$select public.create_booking('x','2026-10-07','2026-10-0
 insert into t.ids select 'b2', public.create_booking('คุณสมหญิง', '2026-10-08', '2026-10-10', 2000, null,
   '[{"room_id":2,"guests":3}]');
 
--- 4. Daily numbers: staying = check_in <= day < check_out
-select t.assert_eq('6 Oct staying', (select staying_guests from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-06'), 4);
-select t.assert_eq('6 Oct check-in', (select checkin_guests from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-06'), 4);
-select t.assert_eq('7 Oct check-in', (select checkin_guests from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-07'), 0);
-select t.assert_eq('7 Oct staying', (select staying_guests from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-07'), 4);
-select t.assert_eq('8 Oct bookings (checkout day excluded)', (select bookings_count from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-08'), 1);
-select t.assert_eq('8 Oct staying', (select staying_guests from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-08'), 3);
-select t.assert_eq('5 Oct empty', (select bookings_count from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-05'), 0);
+-- 4. Daily numbers are counted by check-in date only (not by every night of the stay)
+select t.assert_eq('6 Oct reserved guests', (select reserved_guests from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-06'), 4);
+select t.assert_eq('6 Oct reserved bookings', (select reserved_bookings from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-06'), 1);
+select t.assert_eq('6 Oct checked-in guests', (select checked_in_guests from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-06'), 0);
+select t.assert_eq('7 Oct no arrivals', (select reserved_guests from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-07'), 0);
+select t.assert_eq('8 Oct arrivals (other booking)', (select reserved_guests from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-08'), 3);
+select t.assert_eq('5 Oct empty', (select reserved_bookings from public.get_daily_stats('2026-10-05','2026-10-10') where day = '2026-10-05'), 0);
 
 -- 5. Room picker availability
 select t.assert_eq('room 102 unavailable', (select is_available from public.available_rooms('2026-10-07','2026-10-09') where name = '102'), false);
@@ -78,7 +77,7 @@ select t.assert_eq('own booking excluded when editing', (select is_available fro
 -- 6. Cancel frees the rooms and drops the numbers
 select public.cancel_booking((select v from t.ids where k='b1'));
 select t.assert_eq('cancelled status', (select status from public.booking_overview where id = (select v from t.ids where k='b1')), 'cancelled');
-select t.assert_eq('7 Oct staying after cancel', (select staying_guests from public.get_daily_stats('2026-10-07','2026-10-07')), 0);
+select t.assert_eq('6 Oct reserved after cancel', (select reserved_guests from public.get_daily_stats('2026-10-06','2026-10-06')), 0);
 select t.expect_error(format('select public.cancel_booking(%s)', (select v from t.ids where k='b1')), 'BK004');
 select t.expect_error(format($$select public.update_booking(%s,'x','2026-10-06','2026-10-08',1,null,'[{"room_id":1,"guests":1}]')$$, (select v from t.ids where k='b1')), 'BK004');
 
@@ -92,7 +91,7 @@ select t.assert_eq('rooms still inactive', (select count(*)::int from public.boo
 -- 8. Restore succeeds once the room is free again
 select public.cancel_booking((select v from t.ids where k='b3'));
 select public.restore_booking((select v from t.ids where k='b1'));
-select t.assert_eq('restored status', (select status from public.booking_overview where id = (select v from t.ids where k='b1')), 'active');
+select t.assert_eq('restored status', (select status from public.booking_overview where id = (select v from t.ids where k='b1')), 'reserved');
 select t.assert_eq('restored_by name', (select restored_by_name from public.booking_overview where id = (select v from t.ids where k='b1')), 'สมชาย');
 select t.assert_eq('cancel info cleared', (select cancelled_at is null from public.booking_overview where id = (select v from t.ids where k='b1')), true);
 

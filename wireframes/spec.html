@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เอกสารนำเสนอระบบและขอบเขตฟังก์ชัน — Booking Share</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #1E3A8A;
+  --primary-light: #EFF6FF;
+  --secondary: #3B82F6;
+  --accent: #A16207;
+  --accent-light: #FEF9C3;
+  --success: #15803D;
+  --success-light: #DCFCE7;
+  --danger: #DC2626;
+  --danger-light: #FEE2E2;
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --text: #0F172A;
+  --muted: #475569;
+  --border: #E2E8F0;
+  --radius: 12px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "IBM Plex Sans Thai", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.6;
+  font-size: 16px;
+}
+.header {
+  background: linear-gradient(135deg, #1E3A8A 0%, #172554 100%);
+  color: #fff;
+  padding: 48px 24px;
+  text-align: center;
+}
+.header h1 {
+  font-size: 32px;
+  margin: 0 0 12px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.header p {
+  margin: 0 auto;
+  max-width: 650px;
+  font-size: 17px;
+  color: #BFDBFE;
+}
+.badge-mvp {
+  display: inline-block;
+  background: #3B82F6;
+  color: #fff;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.container {
+  max-width: 860px;
+  margin: -24px auto 48px;
+  padding: 0 16px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04), 0 2px 4px -2px rgba(0,0,0,0.02);
+}
+.card h2 {
+  font-size: 20px;
+  margin: 0 0 16px;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid var(--primary-light);
+  padding-bottom: 10px;
+}
+.card h3 {
+  font-size: 17px;
+  margin: 20px 0 8px;
+  color: var(--text);
+}
+.banner-action {
+  background: linear-gradient(to right, #EFF6FF, #DBEAFE);
+  border: 1.5px solid #93C5FD;
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.banner-action h3 { margin: 0 0 4px; font-size: 18px; color: var(--primary); }
+.banner-action p { margin: 0; color: var(--muted); font-size: 15px; }
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: all .2s;
+  box-shadow: 0 2px 4px rgba(30, 58, 138, 0.2);
+}
+.btn-primary:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .header h1 { font-size: 24px; }
+  .banner-action { flex-direction: column; align-items: stretch; }
+  .btn-primary { justify-content: center; }
+}
+.feature-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.feature-item b {
+  display: block;
+  font-size: 16px;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+.feature-item p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.tag.ok { background: var(--success-light); color: var(--success); }
+.tag.wait { background: var(--primary-light); color: var(--primary); }
+.tag.warn { background: var(--accent-light); color: var(--accent); }
+.tag.no { background: var(--danger-light); color: var(--danger); }
+.flow-diagram {
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  margin: 16px 0;
+}
+.flow-step {
+  display: inline-block;
+  background: #fff;
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.flow-arrow {
+  display: inline-block;
+  margin: 0 10px;
+  color: var(--muted);
+  font-weight: bold;
+}
+.spec-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 15px;
+}
+.spec-table th, .spec-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.spec-table th {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+.spec-table tr:last-child td { border-bottom: none; }
+.footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 24px 0 48px;
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="badge-mvp">System Specification (MVP)</div>
+  <h1>ใบเสนอสเปกระบบ Booking Share</h1>
+  <p>ระบบบันทึกและแชร์ยอดการจองห้องพักภายในบริษัท ใช้งานสะดวก รวดเร็ว พร้อมรองรับมือถือและ PWA</p>
+</header>
+
+<div class="container">
+
+  <!-- Interactive Demo CTA -->
+  <div class="banner-action">
+    <div>
+      <h3>ลองทดสอบการใช้งานจริง (Interactive Prototype)</h3>
+      <p>สามารถทดลองกดบันทึกการจอง เช็กอิน และจัดการห้องได้ทันทีบนหน้าจอจำลอง</p>
+    </div>
+    <a href="./index.html" class="btn-primary" target="_blank">
+      <span>เปิดหน้าจอทดลองใช้งาน</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
+  </div>
+
+  <!-- Section 1: Overview & Value -->
+  <div class="card">
+    <h2>1. วัตถุประสงค์และประโยชน์ของระบบ</h2>
+    <p>ระบบ <b>Booking Share</b> ออกแบบขึ้นมาเพื่อแก้ไขปัญหาการสื่อสารเรื่องการจองห้องพักภายในทีม โดยมุ่งเน้นความเรียบง่าย ไม่ซับซ้อน และทุกคนในบริษัทสามารถเปิดดูข้อมูลลูกค้าที่เข้าพักในแต่ละวันได้ทันทีจากมือถือ</p>
+    <div class="grid-2">
+      <div class="feature-item">
+        <b>📱 ใช้งานง่ายบนมือถือ (Mobile First)</b>
+        <p>เปิดเช็กยอดได้ในไม่กี่วินาที ติดตั้งบนหน้าจอโฮมเป็นแอป (PWA) ได้โดยไม่ต้องดาวน์โหลดผ่านสโตร์</p>
+      </div>
+      <div class="feature-item">
+        <b>🔒 ป้องกันห้องชนกัน 100%</b>
+        <p>ระบบล็อกห้องอัตโนมัติที่ระดับฐานข้อมูล ป้องกันไม่ให้เกิดการจองห้องซ้ำในคืนเดียวกันเด็ดขาด</p>
+      </div>
+      <div class="feature-item">
+        <b>👥 รวมยอดลูกค้าชัดเจน</b>
+        <p>แยกสถานะ "รอเช็กอิน" และ "เช็กอินแล้ว" ให้เห็นทันทีว่าวันนี้มีแขกเข้าพักจริงกี่คน</p>
+      </div>
+      <div class="feature-item">
+        <b>🔔 แจ้งเตือนความเคลื่อนไหวในทีม</b>
+        <p>เมื่อมีการจองใหม่ ยกเลิก หรือคืนรายการ เพื่อนร่วมทีมทุกคนจะเห็นการแจ้งเตือนในแอปทันที</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Core Workflows -->
+  <div class="card">
+    <h2>2. กระบวนการทำงานหลัก (User Workflow)</h2>
+    
+    <h3>วงจรสถานะการจอง (Booking Lifecycle)</h3>
+    <div class="flow-diagram">
+      <div class="flow-step">1. จองห้องพัก<br><span style="font-size:12px;color:var(--muted)">(รอเช็กอิน)</span></div>
+      <div class="flow-arrow">➔</div>
+      <div class="flow-step" style="border-color:var(--success);color:var(--success)">2. เช็กอินลูกค้า<br><span style="font-size:12px;color:var(--muted)">(เมื่อลูกค้ามาถึง)</span></div>
+      <br><br>
+      <div style="font-size:14px;color:var(--muted)">
+        * สามารถ <b>"ยกเลิกเช็กอิน"</b> กลับไปรอเช็กอินได้หากกดผิด<br>
+        * สามารถ <b>"ยกเลิกการจอง"</b> ได้เมื่ออยู่ในสถานะรอเช็กอิน (ห้องจะว่างให้คนอื่นจองทันที)
+      </div>
+    </div>
+
+    <h3>สรุปขั้นตอนการใช้งานสำคัญ</h3>
+    <table class="spec-table">
+      <thead>
+        <tr>
+          <th>กิจกรรม</th>
+          <th>คำอธิบายการทำงาน</th>
+          <th>สถานะ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>เปิดดูปฏิทินรายวัน</b></td>
+          <td>เปิดแอปมาเห็นเดือนปัจจุบัน แตะวันที่เพื่อดูยอดรวม <b>รอเช็กอิน</b> และ <b>เช็กอินแล้ว</b></td>
+          <td><span class="tag ok">พร้อมใช้งาน</span></td>
+        </tr>
+        <tr>
+          <td><b>การสร้างรายการจอง</b></td>
+          <td>1 รายการจองสามารถเลือกได้หลายห้อง (กำหนดจำนวนคนแยกแต่ละห้อง) และระบุยอดเงินรวม</td>
+          <td><span class="tag ok">พร้อมใช้งาน</span></td>
+        </tr>
+        <tr>
+          <td><b>การตรวจทานก่อนบันทึก</b></td>
+          <td>มีหน้าต่างสรุป วันที่พัก, รายชื่อห้อง, จำนวนคน และยอดเงิน ให้ตรวจทานก่อนกดยืนยัน</td>
+          <td><span class="tag ok">พร้อมใช้งาน</span></td>
+        </tr>
+        <tr>
+          <td><b>การกดเช็กอิน</b></td>
+          <td>พนักงานกดปุ่ม "เช็กอิน" ได้ทันทีจากการ์ดหน้าปฏิทิน หรือในหน้ารายละเอียดการจอง</td>
+          <td><span class="tag ok">พร้อมใช้งาน</span></td>
+        </tr>
+        <tr>
+          <td><b>การคืนรายการ (Restore)</b></td>
+          <td>รายการที่เคยยกเลิก สามารถกู้คืนได้ แต่ระบบจะตรวจว่าทุกห้องต้องว่างครบตลอดช่วงพัก</td>
+          <td><span class="tag ok">พร้อมใช้งาน</span></td>
+        </tr>
+        <tr>
+          <td><b>การจัดการห้องพัก</b></td>
+          <td>สามารถเพิ่มห้องใหม่ กำหนดราคาอ้างอิง และเปิด/ปิดใช้งานห้องได้โดยตรงในแอป</td>
+          <td><span class="tag ok">พร้อมใช้งาน</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 3: Scope & Boundaries -->
+  <div class="card">
+    <h2>3. ขอบเขตระบบระยะ MVP (In-Scope vs Out-of-Scope)</h2>
+    <div class="grid-2">
+      <div class="feature-item" style="border-left: 4px solid var(--success);">
+        <b style="color:var(--success)">✅ ฟังก์ชันที่มีในระบบ MVP</b>
+        <ul style="margin:8px 0 0;padding-left:20px;font-size:14px;color:var(--text)">
+          <li>เข้าสู่ระบบสำหรับสมาชิกในบริษัท</li>
+          <li>ปฏิทินแสดงยอดคนเข้าพักแยก รอเช็กอิน / เช็กอินแล้ว</li>
+          <li>จองห้องพักข้ามคืน (1 รายการมีหลายห้องได้)</li>
+          <li>ระบบป้องกันการจองห้องซ้อนคืนกันอัตโนมัติ</li>
+          <li>ปุ่มลัดเช็กอิน และยกเลิกการเช็กอิน</li>
+          <li>ระบบแจ้งเตือนภายในแอป (จอง / ยกเลิก / คืนรายการ)</li>
+          <li>หน้าจัดการห้อง (เพิ่มห้อง / แก้ไข / เปิด-ปิดใช้งาน)</li>
+          <li>บันทึกประวัติผู้สร้างและผู้แก้ไขล่าสุด</li>
+        </ul>
+      </div>
+
+      <div class="feature-item" style="border-left: 4px solid var(--muted);">
+        <b style="color:var(--muted)">⏳ สิ่งที่ยังไม่รวมใน MVP (ต่อยอดในอนาคต)</b>
+        <ul style="margin:8px 0 0;padding-left:20px;font-size:14px;color:var(--muted)">
+          <li>ระบบคิดราคาอัตโนมัติ (ปัจจุบันกรอกยอดเงินรวมเอง)</li>
+          <li>ระบบรับชำระเงินและออกใบเสร็จ</li>
+          <li>ระบบแจ้งเตือนผ่าน LINE หรืออีเมล</li>
+          <li>การเปิดให้ลูกค้าภายนอกจองเอง (Public Booking)</li>
+          <li>ระบบหลายสาขา/หลายบริษัท (Multi-tenant)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Architecture & Quality -->
+  <div class="card">
+    <h2>4. มาตรฐานทางเทคนิคและประสบการณ์ใช้งาน (Quality Standard)</h2>
+    <table class="spec-table">
+      <tr>
+        <td style="width:200px"><b>เทคโนโลยีหลัก</b></td>
+        <td>Next.js 14+ (App Router), Supabase, PostgreSQL 16, Tailwind CSS</td>
+      </tr>
+      <tr>
+        <td><b>การรองรับอุปกรณ์</b></td>
+        <td>รองรับสมาร์ตโฟนทุกรุ่น (iOS / Android), แท็บเล็ต และคอมพิวเตอร์เดสก์ท็อป</td>
+      </tr>
+      <tr>
+        <td><b>รูปแบบการแสดงผล</b></td>
+        <td>ภาษาไทย เข้าใจง่าย แสดงวันที่แบบสากล (ค.ศ. เช่น ตุลาคม 2026)</td>
+      </tr>
+      <tr>
+        <td><b>ความปลอดภัยข้อมูล</b></td>
+        <td>มีระบบ Row Level Security (RLS) ตรวจสอบสิทธิ์เฉพาะสมาชิกที่ได้รับอนุญาตเท่านั้น</td>
+      </tr>
+    </table>
+  </div>
+
+</div>
+
+<footer class="footer">
+  Booking Share &copy; 2026 — เอกสารนำเสนอคุณสมบัติระบบสำหรับผู้ใช้งานและผู้มีส่วนเกี่ยวข้อง
+</footer>
+
+</body>
+</html>

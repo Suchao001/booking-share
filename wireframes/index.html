@@ -176,7 +176,8 @@ const sd=s=>{const d=parse(s);return `${d.getUTCDate()} ${MS[d.getUTCMonth()]}`}
 const baht=n=>'฿'+Number(n).toLocaleString('en-US');
 
 /* ---------- mock data (same rules as supabase/migrations/0001_initial.sql) ---------- */
-const ROOMS=[{id:1,name:'101',price:1200},{id:2,name:'102',price:1200},{id:3,name:'201',price:1500},{id:4,name:'202',price:1500},{id:5,name:'301',price:null}];
+const ROOMS=[{id:1,name:'101',price:1200,active:true},{id:2,name:'102',price:1200,active:true},{id:3,name:'201',price:1500,active:true},{id:4,name:'202',price:1500,active:true},{id:5,name:'301',price:null,active:true},{id:6,name:'302',price:null,active:false}];
+let nextRoomId=7;
 const ME='สมชาย';
 let nextId=4;
 const bookings=[
@@ -292,7 +293,7 @@ function newForm(editId){
 function vForm(){
   const f=S.form;const nights=diff(f.in,f.out);const valid=nights>=1;
   const taken=valid?conflicts(ROOMS.map(r=>r.id),f.in,f.out,f.edit):[];
-  const conf={};valid&&ROOMS.forEach(r=>{const c=conflicts([r.id],f.in,f.out,f.edit);if(c.length)conf[r.id]=c[0]});
+  const conf={};valid&&ROOMS.filter(r=>r.active).forEach(r=>{const c=conflicts([r.id],f.in,f.out,f.edit);if(c.length)conf[r.id]=c[0]});
   const total=f.rooms.reduce((s,r)=>s+r.guests,0);
   const E=f.errors||{};
   return `<main class="no-nav">
@@ -307,7 +308,8 @@ function vForm(){
    <h2>2. ห้อง</h2>
    ${E.rooms?`<div class="err" id="e-rooms">${esc(E.rooms)}</div>`:''}
    <div class="list" id="rooms">
-    ${ROOMS.map(r=>{const sel=f.rooms.find(x=>x.room===r.id);const busy=!!conf[r.id];
+    ${ROOMS.some(r=>r.active)?'':'<div class="empty-state card">ยังไม่มีห้องที่เปิดใช้งาน<br><button class="btn secondary" style="margin-top:12px" data-go="rooms">เพิ่มห้อง</button></div>'}
+    ${ROOMS.filter(r=>r.active).map(r=>{const sel=f.rooms.find(x=>x.room===r.id);const busy=!!conf[r.id];
       return `<button class="room" data-room="${r.id}" aria-pressed="${!!sel}" ${busy?'disabled':''}>
         <span><span class="nm">ห้อง ${r.name}</span><br><span class="sub num">${r.price?baht(r.price)+'/คืน':'ไม่ระบุราคา'}${busy?' · <b>ไม่ว่างในช่วงนี้</b>':sel?'':' · ว่าง'}</span></span>
         <span class="chk">${sel?ic('check'):busy?ic('lock'):''}</span></button>
@@ -377,17 +379,41 @@ function vNotifications(){
 function vAccount(){
   return `<main><div class="topbar"><h1>บัญชี</h1></div>
    <div class="card"><b>${ME}</b><div class="muted">somchai@example.com</div></div>
-   <div class="actions"><button class="btn secondary block" data-install>ติดตั้งแอปบนหน้าจอหลัก</button><button class="btn danger block" data-logout>${ic('logout','sm')} ออกจากระบบ</button></div>
+   <div class="actions"><button class="btn secondary block" data-go="rooms">${ic('bed','sm')} จัดการห้อง</button><button class="btn secondary block" data-install>ติดตั้งแอปบนหน้าจอหลัก</button><button class="btn danger block" data-logout>${ic('logout','sm')} ออกจากระบบ</button></div>
    <p class="note-banner" style="margin-top:24px">นี่คือ wireframe แบบกดได้ ข้อมูลเป็นตัวอย่างในหน่วยความจำ รีเฟรชแล้วรีเซ็ต</p>
   </main>${nav('account')}${toastHtml()}`;
 }
 
+
+function vRooms(){
+  const e=S.roomEdit;
+  const cnt=id=>bookings.filter(b=>active(b)&&b.out>TODAY&&b.rooms.some(r=>r.room===id)).length;
+  return `<main>
+   <div class="topbar"><button class="icon-btn" data-back aria-label="กลับ">${ic('left')}</button><h1>จัดการห้อง</h1></div>
+   <p class="muted" style="margin:0 0 12px">ห้องที่เปิดใช้งานจะเลือกได้ตอนจอง ห้องที่ปิดใช้งานยังเห็นในรายการจองเดิม</p>
+   <div class="list">${ROOMS.map(r=>`<button class="bk" data-redit="${r.id}"><div class="row"><span class="t">ห้อง ${esc(r.name)}</span>${r.active?'<span class="badge ok">เปิดใช้งาน</span>':'<span class="badge">ปิดใช้งาน</span>'}</div>
+     <div class="m num">${r.price?baht(r.price)+' ต่อคืน (ราคาอ้างอิง)':'ไม่ระบุราคา'}${cnt(r.id)?` · จองล่วงหน้า ${cnt(r.id)} รายการ`:''}</div></button>`).join('')}</div>
+  </main>
+  <div class="sticky-bar" style="bottom:calc(var(--nav-h) + env(safe-area-inset-bottom))"><button class="btn primary block" data-radd>${ic('plus','sm')} เพิ่มห้อง</button></div>${nav('account')}${toastHtml()}${S.sheet==='room'?vRoomSheet():''}`;
+}
+function vRoomSheet(){
+  const e=S.roomEdit;const E=e.errors||{};
+  return `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rt">
+   <h2 id="rt">${e.id?'แก้ไขห้อง':'เพิ่มห้อง'}</h2>
+   <div class="field"><label for="rname">ชื่อห้อง</label><input id="rname" type="text" value="${esc(e.name)}" ${E.name?'aria-invalid="true" aria-describedby="rname-e"':''} placeholder="เช่น 101">${E.name?`<div class="err" id="rname-e">${esc(E.name)}</div>`:''}</div>
+   <div class="field"><label for="rprice">ราคาอ้างอิงต่อคืน (บาท) <span class="muted">(ไม่บังคับ)</span></label><input id="rprice" type="number" inputmode="decimal" min="0" value="${e.price}" ${E.price?'aria-invalid="true" aria-describedby="rprice-e"':''}>
+    <div class="hint">แสดงเป็นข้อมูลช่วยตอนกรอกยอดรวมเท่านั้น ไม่นำไปคำนวณ</div>${E.price?`<div class="err" id="rprice-e">${esc(E.price)}</div>`:''}</div>
+   ${e.id?`<label class="toggle"><input type="checkbox" id="ractive" ${e.active?'checked':''}> เปิดใช้งานห้องนี้</label><div class="hint" style="margin:-4px 0 8px">ถ้าปิด รายการจองเดิมยังอยู่ แต่เลือกห้องนี้ในการจองใหม่ไม่ได้</div>`:''}
+   <div class="btns"><button class="btn primary block" id="roomSave">บันทึก</button><button class="btn secondary block" data-close>ยกเลิก</button></div>
+  </div></div>`;
+}
+
 function render(){
-  const v={login:vLogin,calendar:vCalendar,form:vForm,detail:vDetail,notifications:vNotifications,account:vAccount}[S.route]();
+  const v={login:vLogin,calendar:vCalendar,form:vForm,detail:vDetail,notifications:vNotifications,account:vAccount,rooms:vRooms}[S.route]();
   const y=$app.querySelector('main')?.scrollTop||0;
   $app.innerHTML=v;
   const m=$app.querySelector('main');if(m&&S._keepScroll!==false)m.scrollTop=y;
-  const sheet=$app.querySelector('.sheet');if(sheet){(sheet.querySelector('button')||sheet).focus()}
+  const sheet=$app.querySelector('.sheet');if(sheet){(sheet.querySelector('.err')?.closest('.field')?.querySelector('input')||sheet.querySelector('input,button')||sheet).focus()}
   if(S.focusErr){$app.querySelector('#errSum')?.focus();S.focusErr=false}
 }
 
@@ -429,7 +455,7 @@ $app.addEventListener('click',e=>{
   if('today' in D){S.month=TODAY.slice(0,7);S.sel=TODAY;return render()}
   if('new' in D){S.form=newForm();return go('form')}
   if(D.open){return go('detail',{id:+D.open})}
-  if('back' in D){return go(S.route==='form'&&S.form.edit?'detail':'calendar')}
+  if('back' in D){return go(S.route==='rooms'?'account':S.route==='form'&&S.form.edit?'detail':'calendar')}
   if(D.room){readForm();const id=+D.room;const i=S.form.rooms.findIndex(r=>r.room===id);
     i>=0?S.form.rooms.splice(i,1):S.form.rooms.push({room:id,guests:1});return render()}
   if(D.g){readForm();const r=S.form.rooms.find(x=>x.room==D.g);r.guests=Math.max(1,(r.guests||1)+ +D.d);return render()}
@@ -445,6 +471,18 @@ $app.addEventListener('click',e=>{
     const nb={id:nextId++,status:'active',createdBy:ME,updatedBy:ME,updatedAt:'ตอนนี้',...data};bookings.push(nb);
     notes.push({id:notes.length+1,type:'created',text:`${ME} จองห้อง ${nb.rooms.map(r=>roomName(r.room)).join(', ')} วันที่ ${sd(nb.in)}–${sd(nb.out)}`,time:'ตอนนี้',booking:nb.id,read:true});
     S.sel=nb.in;S.month=nb.in.slice(0,7);go('calendar');return toast('จองเรียบร้อย')}
+  if('radd' in D){S.roomEdit={id:null,name:'',price:'',active:true,errors:null};S.sheet='room';return render()}
+  if(D.redit){const q=ROOMS.find(x=>x.id==D.redit);S.roomEdit={id:q.id,name:q.name,price:q.price??'',active:q.active,errors:null};S.sheet='room';return render()}
+  if(b.id==='roomSave'){const e=S.roomEdit;e.name=$app.querySelector('#rname').value;e.price=$app.querySelector('#rprice').value;
+    if(e.id)e.active=$app.querySelector('#ractive').checked;
+    const er={};const nm=e.name.trim();
+    if(!nm)er.name='ต้องระบุชื่อห้อง';
+    else if(ROOMS.some(q=>q.id!==e.id&&q.name.toLowerCase()===nm.toLowerCase()))er.name='มีห้องชื่อนี้อยู่แล้ว';
+    if(e.price!==''&&Number(e.price)<0)er.price='ราคาอ้างอิงต้องไม่ติดลบ';
+    if(Object.keys(er).length){e.errors=er;return render()}
+    const price=e.price===''?null:Number(e.price);
+    if(e.id){Object.assign(ROOMS.find(q=>q.id===e.id),{name:nm,price,active:e.active});S.sheet=null;return(toast('บันทึกห้องแล้ว'),render())}
+    ROOMS.push({id:nextRoomId++,name:nm,price,active:true});S.sheet=null;return(toast(`เพิ่มห้อง ${nm} แล้ว`),render())}
   if('edit' in D){S.form=newForm(S.id);return go('form')}
   if('cancel' in D){S.sheet='cancel';return render()}
   if(b.id==='doCancel'){const x=bookings.find(q=>q.id===S.id);x.status='cancelled';x.cancelledBy=ME;x.updatedBy=ME;x.updatedAt='ตอนนี้';
@@ -465,7 +503,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.sheet){S.sheet=nu
 (function(){const h=location.hash.slice(1);
   if(h==='form'){S.form=newForm()}
   if(h==='detail'){S.id=1}
-  if(['calendar','form','detail','notifications','account'].includes(h))S.route=h})();
+  if(['calendar','form','detail','notifications','account','rooms'].includes(h))S.route=h})();
 render();
 </script>
 </body>

@@ -2,7 +2,7 @@
 
 อ้างอิงจาก [SCOPE.md](./SCOPE.md) เป็นแหล่งความจริงของขอบเขตและกติกา เอกสารนี้กำหนดหน้าจอ การไหลของผู้ใช้ และ design tokens ก่อนเริ่มเขียนโค้ด
 
-ดู wireframe แบบกดได้ที่ [wireframes/index.html](./wireframes/index.html) (เปิดในเบราว์เซอร์; ลิงก์ตรง `#calendar`, `#form`, `#detail`, `#notifications`, `#account`)
+ดู wireframe แบบกดได้ที่ [wireframes/index.html](./wireframes/index.html) (เปิดในเบราว์เซอร์; ลิงก์ตรง `#calendar`, `#form`, `#detail`, `#notifications`, `#account`, `#rooms`)
 
 ## 1. หลักการออกแบบ
 
